@@ -136,9 +136,6 @@ void spillSupression() {
 }
 
 void associatedColorImage() {
-	// int w = glutGet(GLUT_WINDOW_WIDTH);
-  	// int h = glutGet(GLUT_WINDOW_HEIGHT);
-
   	unsigned char alpha = 0;
   	for (size_t i = 0; i < imageIO.width * imageIO.height; ++i) {
   		alpha = imageIO.inPixmap[i].a;
@@ -194,25 +191,21 @@ void display() {
 int main(int argc, char* argv[]) {
 	// handle command line input
 	getFileNameFromCommandLine(argc, argv, input, output);
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
 
 	if (!input.empty()) {			
 		imageIO.loadImage(input);
-		int w = imageIO.width;
-		int h = imageIO.height;
 
-		// createAlphaMask(w, h);
+	  	glutInitWindowSize(imageIO.width, imageIO.height);
+	}
 
-		glutInit(&argc, argv);
-		glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
-	  	glutInitWindowSize(w, h);
-	  	glutCreateWindow("Green Screen");
-
-		glutDisplayFunc(display);
-		glutKeyboardFunc(handleKeyboard);
-		glutReshapeFunc(handleReshape);
+	glutCreateWindow("Green Screen");
+	glutDisplayFunc(display);
+	glutKeyboardFunc(handleKeyboard);
+	glutReshapeFunc(handleReshape);
 
 		glutMainLoop();
-	}
 
 	return 0;
 }

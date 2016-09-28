@@ -2,6 +2,7 @@
  * Get full specification on https://people.cs.clemson.edu/~dhouse/courses/404/hw/hw3/hw3.html
  *
  * use 'make all' to compile two programs
+ * bg.jpg is example background image for compositing
  *
  * alphamask Program function:
  * - Read two associated color images and composite
