@@ -1,3 +1,19 @@
+/**
+ * Homework 3 for CS604
+ * Get full sepcs on https://people.cs.clemson.edu/~dhouse/courses/404/hw/hw3/hw3.html
+ *
+ * Program function:
+ * - Generate alpha mask for image
+ * - Display generated image
+ * - Save generated image
+ *
+ * Usage:
+ * - alphamask input.img output.img
+ *
+ * author: Cencen Zheng 9/27/2016
+ * 
+ */
+
 #ifdef __APPLE__
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #  include <GLUT/glut.h>
