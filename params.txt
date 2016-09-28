@@ -1,3 +1,5 @@
 screenV:120.0
 minH:90.0
 maxH:160.0
+thresholdS:0.2
+thresholdV:0.3

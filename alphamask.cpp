@@ -16,14 +16,8 @@
 #define maximum(x, y, z) ((x) > (y) ? ((x) > (z) ? (x) : (z)) : ((y) > (z) ? (y) : (z))) 
 #define minimum(x, y, z) ((x) < (y) ? ((x) < (z) ? (x) : (z)) : ((y) < (z) ? (y) : (z)))
 
-typedef struct {
-	double h, s, v;
-} HSVPixel;
-
-static ImageIO imageIO = ImageIO();
-
-static HSVPixel* hsvPixmap;
 static std::string input, output; 
+static ImageIO imageIO = ImageIO();
 
 void RGBtoHSV(unsigned char r, unsigned char g, unsigned char b, double &h, double &s, double &v) {
 
@@ -75,25 +69,94 @@ void getFileNameFromCommandLine(int argc, char* argv[], std::string &input, std:
   }
 }
 
+/**
+ * split string by delimiter
+ * credits to http://stackoverflow.com/a/236803
+ * @param s     string to be splited
+ * @param delim delimiter
+ * @param elems splited values
+ */
+void split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+}
+
+void parseParameters(double &screenValue, double &hueThreshold, double &thresholdS, double &thresholdV) {
+	std::ifstream file("params.txt");
+	std::string line;
+	std::vector<std::string> v;
+
+	if (file.is_open()) {
+		while(getline(file, line)) {
+			split(line, ':', v);
+		}
+		file.close();
+	}
+
+	double minH, maxH;
+	for (int i = 0; i < v.size(); ++i) {
+		switch(i) {
+			case 1: screenValue = stod(v[i]); break;
+			case 3: minH = stod(v[i]); break;
+			case 5: maxH = stod(v[i]); break;
+			case 7: thresholdS = stod(v[i]); break;
+			case 9: thresholdV = stod(v[i]); break;
+			default: break;
+		}
+	}
+	hueThreshold = fmin(fabs(screenValue - minH), fabs(screenValue - maxH));
+}
+
+void spillSupression() {
+	unsigned char min = 255;
+	for (int i = 0; i < imageIO.width * imageIO.height; ++i) {
+		min = minimum(imageIO.inPixmap[i].r, imageIO.inPixmap[i].g, imageIO.inPixmap[i].b);
+		imageIO.inPixmap[i].g = min;
+	}
+}
+
 void associatedColorImage() {
-	int w = glutGet(GLUT_WINDOW_WIDTH);
-  	int h = glutGet(GLUT_WINDOW_HEIGHT);
+	// int w = glutGet(GLUT_WINDOW_WIDTH);
+  	// int h = glutGet(GLUT_WINDOW_HEIGHT);
 
   	unsigned char alpha = 0;
-  	for (size_t i = 0; i < w * h; ++i) {
+  	for (size_t i = 0; i < imageIO.width * imageIO.height; ++i) {
   		alpha = imageIO.inPixmap[i].a;
   		imageIO.inPixmap[i].r *= alpha / 255.0; 
   		imageIO.inPixmap[i].g *= alpha / 255.0; 
   		imageIO.inPixmap[i].b *= alpha / 255.0; 
   	}
+}
 
-  	glutPostRedisplay();
+void createAlphaMask() {
+	double h, s, v;
+	double screenValue, thresholdH, thresholdS, thresholdV;
+	parseParameters(screenValue, thresholdH, thresholdS, thresholdV);
+
+	for (int i = 0; i < imageIO.width * imageIO.height; ++i) {	
+		RGBtoHSV(imageIO.inPixmap[i].r, imageIO.inPixmap[i].g, imageIO.inPixmap[i].b, h, s, v);
+
+		if (fabs(h - screenValue) <= thresholdH && s > thresholdS && v > thresholdV) {
+			imageIO.inPixmap[i].a = 0;
+		} else {
+			imageIO.inPixmap[i].a = 255;
+		}
+	}
+
+	spillSupression();
+	associatedColorImage();
+
+	glutPostRedisplay();
 }
 
 void handleKeyboard(unsigned char key, int x, int y) {
 	switch(key) {
     case 'w': case 'W': imageIO.exportImage(output); break;
-    case 'a': case 'A': associatedColorImage(); break;
+    case 'm': case 'M': createAlphaMask(); break;
     case 'q': case 'Q': exit(0); break;
   }	
 }
@@ -112,63 +175,6 @@ void display() {
 	imageIO.drawImage();
 }
 
-/**
- * split string by delimiter
- * credits to http://stackoverflow.com/a/236803
- * @param s     string to be splited
- * @param delim delimiter
- * @param elems splited values
- */
-void split(const std::string &s, char delim, std::vector<std::string> &elems) {
-    std::stringstream ss;
-    ss.str(s);
-    std::string item;
-    while (getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-}
-
-void parseParameters(double &screenValue, double &hueThreshold) {
-	std::ifstream file("params.txt");
-	std::string line;
-	std::vector<std::string> v;
-
-	if (file.is_open()) {
-		while(getline(file, line)) {
-			split(line, ':', v);
-		}
-		file.close();
-	}
-
-	double minH, maxH;
-	for (int i = 0; i < v.size(); ++i) {
-		switch(i) {
-			case 1: screenValue = stod(v[i]); break;
-			case 3: minH = stod(v[i]); break;
-			case 5: maxH = stod(v[i]); break;
-			default: break;
-		}
-	}
-	hueThreshold = fmin(fabs(screenValue - minH), fabs(screenValue - maxH));
-}
-
-void createAlphaMask(int w, int h) {
-	double screenValue, threshold;
-	hsvPixmap = new HSVPixel[w * h];
-	parseParameters(screenValue, threshold);
-
-	for (int i = 0; i < w * h; ++i) {	
-		RGBtoHSV(imageIO.inPixmap[i].r, imageIO.inPixmap[i].g, imageIO.inPixmap[i].b, hsvPixmap[i].h, hsvPixmap[i].s, hsvPixmap[i].v);
-
-		if (fabs(hsvPixmap[i].h - screenValue) <= threshold) {
-			imageIO.inPixmap[i].a = 0;
-		} 
-		else {
-			imageIO.inPixmap[i].a = 255;
-		}
-	}
-}
-
 int main(int argc, char* argv[]) {
 	// handle command line input
 	getFileNameFromCommandLine(argc, argv, input, output);
@@ -178,7 +184,7 @@ int main(int argc, char* argv[]) {
 		int w = imageIO.width;
 		int h = imageIO.height;
 
-		createAlphaMask(w, h);
+		// createAlphaMask(w, h);
 
 		glutInit(&argc, argv);
 		glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
