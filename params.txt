@@ -1,0 +1,3 @@
+screenV:120.0
+minH:90.0
+maxH:160.0
