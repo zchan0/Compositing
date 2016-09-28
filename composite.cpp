@@ -1,3 +1,27 @@
+/**
+ *
+ * CS604 Homework 3,
+ * Get full specification on https://people.cs.clemson.edu/~dhouse/courses/404/hw/hw3/hw3.html
+ *
+ * Program function:
+ * - Read two associated color images and composite
+ * - Display composited image
+ * - Write composited image
+ *
+ * Usage:
+ * - > composite A.img B.img // make A over B
+ * - c/C to trigger composite
+ * - w/W to save composited image, default name is "composite.png"
+ *
+ * Other:
+ * - default position of A is (0, 0)
+ * - composited image store in B.img
+ * - for reuse, use imgs to store image names from command line, can modify some code to composite multiple images
+ *
+ * author: Cencen Zheng 9/27/2016
+ * 
+ */
+
 #ifdef __APPLE__
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #  include <GLUT/glut.h>
@@ -65,9 +89,7 @@ bool compositImage() {
 	int Bw = BImageIO.width;
 	int Bh = BImageIO.height;
 
-	std::cout << "Aw " << Aw << " Ah " << Ah << " Bw " << Bw << " Bh " << Bh << std::endl; 
-
-	if(!setFgImagePostion((Bw - Aw) / 2, (Bh - Ah) / 2)) { return false; }
+	if(!setFgImagePostion(0, 0)) { return false; }
 
 	int aIndex, bIndex;
 	unsigned char alpha = 0;
